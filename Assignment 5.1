@@ -1,0 +1,432 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyMgBjU/F1WGZFQMv92yEtVA",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/reeniecd/DSC680-T301/blob/main/Assignment%205.1\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 1,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "4LoxHg14S4kI",
+        "outputId": "d757ea4c-1ec9-42d8-a084-64f1a9b41f1f"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Cloning into 'dsc650'...\n",
+            "remote: Enumerating objects: 120326, done.\u001b[K\n",
+            "remote: Counting objects: 100% (128/128), done.\u001b[K\n",
+            "remote: Compressing objects: 100% (43/43), done.\u001b[K\n",
+            "remote: Total 120326 (delta 54), reused 121 (delta 53), pack-reused 120198\u001b[K\n",
+            "Receiving objects: 100% (120326/120326), 360.60 MiB | 21.22 MiB/s, done.\n",
+            "Resolving deltas: 100% (7337/7337), done.\n",
+            "Updating files: 100% (114699/114699), done.\n"
+          ]
+        }
+      ],
+      "source": [
+        "!git clone https://github.com/bellevue-university/dsc650.git"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "pip install nltk\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "vCHEGC8IT3i0",
+        "outputId": "e555d57a-5a71-43a5-8d7e-d264a0d6ad51"
+      },
+      "execution_count": 3,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Looking in indexes: https://pypi.org/simple, https://us-python.pkg.dev/colab-wheels/public/simple/\n",
+            "Requirement already satisfied: nltk in /usr/local/lib/python3.9/dist-packages (3.8.1)\n",
+            "Requirement already satisfied: tqdm in /usr/local/lib/python3.9/dist-packages (from nltk) (4.65.0)\n",
+            "Requirement already satisfied: click in /usr/local/lib/python3.9/dist-packages (from nltk) (8.1.3)\n",
+            "Requirement already satisfied: regex>=2021.8.3 in /usr/local/lib/python3.9/dist-packages (from nltk) (2022.10.31)\n",
+            "Requirement already satisfied: joblib in /usr/local/lib/python3.9/dist-packages (from nltk) (1.2.0)\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "\n",
+        "pip install scikit-learn"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "KSeMMzXKT7q2",
+        "outputId": "f6947849-26d1-41d7-cf55-b104e67ea560"
+      },
+      "execution_count": 4,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Looking in indexes: https://pypi.org/simple, https://us-python.pkg.dev/colab-wheels/public/simple/\n",
+            "Requirement already satisfied: scikit-learn in /usr/local/lib/python3.9/dist-packages (1.2.2)\n",
+            "Requirement already satisfied: numpy>=1.17.3 in /usr/local/lib/python3.9/dist-packages (from scikit-learn) (1.22.4)\n",
+            "Requirement already satisfied: joblib>=1.1.1 in /usr/local/lib/python3.9/dist-packages (from scikit-learn) (1.2.0)\n",
+            "Requirement already satisfied: threadpoolctl>=2.0.0 in /usr/local/lib/python3.9/dist-packages (from scikit-learn) (3.1.0)\n",
+            "Requirement already satisfied: scipy>=1.3.2 in /usr/local/lib/python3.9/dist-packages (from scikit-learn) (1.10.1)\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import os\n",
+        "import nltk\n",
+        "nltk.download('punkt')\n",
+        "nltk.download('stopwords')\n",
+        "from nltk.corpus import stopwords\n",
+        "from nltk.tokenize import word_tokenize\n",
+        "from sklearn.feature_extraction.text import TfidfVectorizer\n",
+        "from sklearn.svm import LinearSVC\n",
+        "from sklearn.pipeline import Pipeline\n",
+        "from sklearn.metrics import accuracy_score\n",
+        "from sklearn.model_selection import train_test_split\n",
+        "\n",
+        "# Define the path to the IMDB dataset in your Google Colab environment\n",
+        "data_folder = '/content/dsc650/data/external/imdb/aclImdb'\n",
+        "\n",
+        "# Define a function to load the reviews from a folder\n",
+        "def load_reviews(folder):\n",
+        "    reviews = []\n",
+        "    for file in os.listdir(folder):\n",
+        "        with open(os.path.join(folder, file), 'r', encoding='utf-8') as f:\n",
+        "            review = f.read()\n",
+        "            reviews.append(review)\n",
+        "    return reviews\n",
+        "\n",
+        "# Load the positive and negative reviews from the train and test folders\n",
+        "train_pos_folder = os.path.join(data_folder, 'train', 'pos')\n",
+        "train_neg_folder = os.path.join(data_folder, 'train', 'neg')\n",
+        "test_pos_folder = os.path.join(data_folder, 'test', 'pos')\n",
+        "test_neg_folder = os.path.join(data_folder, 'test', 'neg')\n",
+        "\n",
+        "train_pos_reviews = load_reviews(train_pos_folder)\n",
+        "train_neg_reviews = load_reviews(train_neg_folder)\n",
+        "test_pos_reviews = load_reviews(test_pos_folder)\n",
+        "test_neg_reviews = load_reviews(test_neg_folder)\n",
+        "\n",
+        "# Combine the positive and negative reviews into a single list, and label them\n",
+        "train_reviews = train_pos_reviews + train_neg_reviews\n",
+        "test_reviews = test_pos_reviews + test_neg_reviews\n",
+        "train_labels = [1] * len(train_pos_reviews) + [0] * len(train_neg_reviews)\n",
+        "test_labels = [1] * len(test_pos_reviews) + [0] * len(test_neg_reviews)\n",
+        "\n",
+        "# Define a function to preprocess the reviews\n",
+        "def preprocess(review):\n",
+        "    # Convert to lowercase\n",
+        "    review = review.lower()\n",
+        "    # Tokenize into words\n",
+        "    words = word_tokenize(review)\n",
+        "    # Remove stopwords\n",
+        "    stop_words = set(stopwords.words('english'))\n",
+        "    words = [word for word in words if word not in stop_words]\n",
+        "    # Join the words back into a string\n",
+        "    review = ' '.join(words)\n",
+        "    return review\n",
+        "\n",
+        "# Preprocess the train and test reviews\n",
+        "train_reviews = [preprocess(review) for review in train_reviews]\n",
+        "test_reviews = [preprocess(review) for review in test_reviews]\n",
+        "\n",
+        "# Define a pipeline for the classifier\n",
+        "classifier = Pipeline([\n",
+        "    ('vectorizer', TfidfVectorizer()),\n",
+        "    ('clf', LinearSVC())\n",
+        "])\n",
+        "\n",
+        "# Split the train data into a smaller training set and a validation set\n",
+        "train_data, val_data, train_labels, val_labels = train_test_split(train_reviews, train_labels, test_size=0.2)\n",
+        "\n",
+        "# Train the classifier on the smaller training set\n",
+        "classifier.fit(train_data, train_labels)\n",
+        "\n",
+        "# Evaluate the classifier on the validation set\n",
+        "val_preds = classifier.predict(val_data)\n",
+        "val_acc = accuracy_score(val_labels, val_preds)\n",
+        "print('Validation accuracy:', val_acc)\n",
+        "\n",
+        "# Test the classifier on the test set\n",
+        "test_preds = classifier.predict(test_reviews)\n",
+        "test_acc = accuracy_score(test_labels, test_preds)\n",
+        "print('Test accuracy:', test_acc)\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "y3Blp_b_ZHBx",
+        "outputId": "7b1d0a00-f931-4f5a-e0c4-a9b6ce38f1fe"
+      },
+      "execution_count": 18,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stderr",
+          "text": [
+            "[nltk_data] Downloading package punkt to /root/nltk_data...\n",
+            "[nltk_data]   Package punkt is already up-to-date!\n",
+            "[nltk_data] Downloading package stopwords to /root/nltk_data...\n",
+            "[nltk_data]   Unzipping corpora/stopwords.zip.\n"
+          ]
+        },
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Validation accuracy: 0.8888\n",
+            "Test accuracy: 0.87104\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!pip install keras\n",
+        "!pip install tensorflow\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "0UFqujZde8fY",
+        "outputId": "ddfb6e75-6cc6-4bca-9405-455fd2c9258f"
+      },
+      "execution_count": 20,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Looking in indexes: https://pypi.org/simple, https://us-python.pkg.dev/colab-wheels/public/simple/\n",
+            "Requirement already satisfied: keras in /usr/local/lib/python3.9/dist-packages (2.12.0)\n",
+            "Looking in indexes: https://pypi.org/simple, https://us-python.pkg.dev/colab-wheels/public/simple/\n",
+            "Requirement already satisfied: tensorflow in /usr/local/lib/python3.9/dist-packages (2.12.0)\n",
+            "Requirement already satisfied: jax>=0.3.15 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (0.4.7)\n",
+            "Requirement already satisfied: absl-py>=1.0.0 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (1.4.0)\n",
+            "Requirement already satisfied: wrapt<1.15,>=1.11.0 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (1.14.1)\n",
+            "Requirement already satisfied: keras<2.13,>=2.12.0 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (2.12.0)\n",
+            "Requirement already satisfied: protobuf!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5,<5.0.0dev,>=3.20.3 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (3.20.3)\n",
+            "Requirement already satisfied: setuptools in /usr/local/lib/python3.9/dist-packages (from tensorflow) (67.6.1)\n",
+            "Requirement already satisfied: numpy<1.24,>=1.22 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (1.22.4)\n",
+            "Requirement already satisfied: tensorflow-io-gcs-filesystem>=0.23.1 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (0.32.0)\n",
+            "Requirement already satisfied: termcolor>=1.1.0 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (2.2.0)\n",
+            "Requirement already satisfied: google-pasta>=0.1.1 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (0.2.0)\n",
+            "Requirement already satisfied: libclang>=13.0.0 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (16.0.0)\n",
+            "Requirement already satisfied: typing-extensions>=3.6.6 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (4.5.0)\n",
+            "Requirement already satisfied: six>=1.12.0 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (1.16.0)\n",
+            "Requirement already satisfied: astunparse>=1.6.0 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (1.6.3)\n",
+            "Requirement already satisfied: grpcio<2.0,>=1.24.3 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (1.53.0)\n",
+            "Requirement already satisfied: gast<=0.4.0,>=0.2.1 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (0.4.0)\n",
+            "Requirement already satisfied: tensorflow-estimator<2.13,>=2.12.0 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (2.12.0)\n",
+            "Requirement already satisfied: h5py>=2.9.0 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (3.8.0)\n",
+            "Requirement already satisfied: packaging in /usr/local/lib/python3.9/dist-packages (from tensorflow) (23.0)\n",
+            "Requirement already satisfied: tensorboard<2.13,>=2.12 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (2.12.1)\n",
+            "Requirement already satisfied: opt-einsum>=2.3.2 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (3.3.0)\n",
+            "Requirement already satisfied: flatbuffers>=2.0 in /usr/local/lib/python3.9/dist-packages (from tensorflow) (23.3.3)\n",
+            "Requirement already satisfied: wheel<1.0,>=0.23.0 in /usr/local/lib/python3.9/dist-packages (from astunparse>=1.6.0->tensorflow) (0.40.0)\n",
+            "Requirement already satisfied: ml-dtypes>=0.0.3 in /usr/local/lib/python3.9/dist-packages (from jax>=0.3.15->tensorflow) (0.0.4)\n",
+            "Requirement already satisfied: scipy>=1.7 in /usr/local/lib/python3.9/dist-packages (from jax>=0.3.15->tensorflow) (1.10.1)\n",
+            "Requirement already satisfied: google-auth-oauthlib<1.1,>=0.5 in /usr/local/lib/python3.9/dist-packages (from tensorboard<2.13,>=2.12->tensorflow) (1.0.0)\n",
+            "Requirement already satisfied: markdown>=2.6.8 in /usr/local/lib/python3.9/dist-packages (from tensorboard<2.13,>=2.12->tensorflow) (3.4.3)\n",
+            "Requirement already satisfied: tensorboard-data-server<0.8.0,>=0.7.0 in /usr/local/lib/python3.9/dist-packages (from tensorboard<2.13,>=2.12->tensorflow) (0.7.0)\n",
+            "Requirement already satisfied: requests<3,>=2.21.0 in /usr/local/lib/python3.9/dist-packages (from tensorboard<2.13,>=2.12->tensorflow) (2.27.1)\n",
+            "Requirement already satisfied: tensorboard-plugin-wit>=1.6.0 in /usr/local/lib/python3.9/dist-packages (from tensorboard<2.13,>=2.12->tensorflow) (1.8.1)\n",
+            "Requirement already satisfied: werkzeug>=1.0.1 in /usr/local/lib/python3.9/dist-packages (from tensorboard<2.13,>=2.12->tensorflow) (2.2.3)\n",
+            "Requirement already satisfied: google-auth<3,>=1.6.3 in /usr/local/lib/python3.9/dist-packages (from tensorboard<2.13,>=2.12->tensorflow) (2.17.2)\n",
+            "Requirement already satisfied: rsa<5,>=3.1.4 in /usr/local/lib/python3.9/dist-packages (from google-auth<3,>=1.6.3->tensorboard<2.13,>=2.12->tensorflow) (4.9)\n",
+            "Requirement already satisfied: cachetools<6.0,>=2.0.0 in /usr/local/lib/python3.9/dist-packages (from google-auth<3,>=1.6.3->tensorboard<2.13,>=2.12->tensorflow) (5.3.0)\n",
+            "Requirement already satisfied: pyasn1-modules>=0.2.1 in /usr/local/lib/python3.9/dist-packages (from google-auth<3,>=1.6.3->tensorboard<2.13,>=2.12->tensorflow) (0.2.8)\n",
+            "Requirement already satisfied: requests-oauthlib>=0.7.0 in /usr/local/lib/python3.9/dist-packages (from google-auth-oauthlib<1.1,>=0.5->tensorboard<2.13,>=2.12->tensorflow) (1.3.1)\n",
+            "Requirement already satisfied: importlib-metadata>=4.4 in /usr/local/lib/python3.9/dist-packages (from markdown>=2.6.8->tensorboard<2.13,>=2.12->tensorflow) (6.2.0)\n",
+            "Requirement already satisfied: idna<4,>=2.5 in /usr/local/lib/python3.9/dist-packages (from requests<3,>=2.21.0->tensorboard<2.13,>=2.12->tensorflow) (3.4)\n",
+            "Requirement already satisfied: charset-normalizer~=2.0.0 in /usr/local/lib/python3.9/dist-packages (from requests<3,>=2.21.0->tensorboard<2.13,>=2.12->tensorflow) (2.0.12)\n",
+            "Requirement already satisfied: certifi>=2017.4.17 in /usr/local/lib/python3.9/dist-packages (from requests<3,>=2.21.0->tensorboard<2.13,>=2.12->tensorflow) (2022.12.7)\n",
+            "Requirement already satisfied: urllib3<1.27,>=1.21.1 in /usr/local/lib/python3.9/dist-packages (from requests<3,>=2.21.0->tensorboard<2.13,>=2.12->tensorflow) (1.26.15)\n",
+            "Requirement already satisfied: MarkupSafe>=2.1.1 in /usr/local/lib/python3.9/dist-packages (from werkzeug>=1.0.1->tensorboard<2.13,>=2.12->tensorflow) (2.1.2)\n",
+            "Requirement already satisfied: zipp>=0.5 in /usr/local/lib/python3.9/dist-packages (from importlib-metadata>=4.4->markdown>=2.6.8->tensorboard<2.13,>=2.12->tensorflow) (3.15.0)\n",
+            "Requirement already satisfied: pyasn1<0.5.0,>=0.4.6 in /usr/local/lib/python3.9/dist-packages (from pyasn1-modules>=0.2.1->google-auth<3,>=1.6.3->tensorboard<2.13,>=2.12->tensorflow) (0.4.8)\n",
+            "Requirement already satisfied: oauthlib>=3.0.0 in /usr/local/lib/python3.9/dist-packages (from requests-oauthlib>=0.7.0->google-auth-oauthlib<1.1,>=0.5->tensorboard<2.13,>=2.12->tensorflow) (3.2.2)\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import os\n",
+        "import numpy as np\n",
+        "from keras.datasets import imdb\n",
+        "from keras.preprocessing import sequence\n",
+        "from keras.models import Sequential\n",
+        "from keras.layers import Embedding, SimpleRNN, Dense\n",
+        "from keras.preprocessing.text import Tokenizer\n",
+        "from tensorflow.keras.preprocessing.sequence import pad_sequences\n",
+        "\n",
+        "\n",
+        "# Define the data folder\n",
+        "data_folder = '/content/dsc650/data/external/imdb/aclImdb'\n",
+        "\n",
+        "# Load the IMDb movie review dataset\n",
+        "max_features = 10000\n",
+        "maxlen = 500\n",
+        "batch_size = 32\n",
+        "print('Loading data...')\n",
+        "train_dir = os.path.join(data_folder, 'train')\n",
+        "test_dir = os.path.join(data_folder, 'test')\n",
+        "\n",
+        "# Load the train reviews and labels\n",
+        "train_reviews = []\n",
+        "train_labels = []\n",
+        "for label_type in ['neg', 'pos']:\n",
+        "    dir_name = os.path.join(train_dir, label_type)\n",
+        "    for fname in os.listdir(dir_name):\n",
+        "        if fname.endswith('.txt'):\n",
+        "            with open(os.path.join(dir_name, fname), encoding='utf-8') as f:\n",
+        "                train_reviews.append(f.read())\n",
+        "            train_labels.append(0 if label_type == 'neg' else 1)\n",
+        "\n",
+        "# Load the test reviews and labels\n",
+        "test_reviews = []\n",
+        "test_labels = []\n",
+        "for label_type in ['neg', 'pos']:\n",
+        "    dir_name = os.path.join(test_dir, label_type)\n",
+        "    for fname in os.listdir(dir_name):\n",
+        "        if fname.endswith('.txt'):\n",
+        "            with open(os.path.join(dir_name, fname), encoding='utf-8') as f:\n",
+        "                test_reviews.append(f.read())\n",
+        "            test_labels.append(0 if label_type == 'neg' else 1)\n",
+        "\n",
+        "print(len(train_reviews), 'train sequences')\n",
+        "print(len(test_reviews), 'test sequences')\n",
+        "\n",
+        "# Tokenize the train and test reviews\n",
+        "tokenizer = Tokenizer(num_words=max_features)\n",
+        "tokenizer.fit_on_texts(train_reviews)\n",
+        "train_sequences = tokenizer.texts_to_sequences(train_reviews)\n",
+        "test_sequences = tokenizer.texts_to_sequences(test_reviews)\n",
+        "\n",
+        "word_index = tokenizer.word_index\n",
+        "print('Found %s unique tokens.' % len(word_index))\n",
+        "\n",
+        "# Pad the train and test sequences\n",
+        "train_data = pad_sequences(train_sequences, maxlen=maxlen)\n",
+        "test_data = pad_sequences(test_sequences, maxlen=maxlen)\n",
+        "\n",
+        "# Convert the train and test labels to numpy arrays\n",
+        "train_labels = np.asarray(train_labels)\n",
+        "test_labels = np.asarray(test_labels)\n",
+        "\n",
+        "# Build the model\n",
+        "model = Sequential()\n",
+        "model.add(Embedding(max_features, 32))\n",
+        "model.add(SimpleRNN(32))\n",
+        "model.add(Dense(1, activation='sigmoid'))\n",
+        "\n",
+        "# Compile the model\n",
+        "model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['acc'])\n",
+        "\n",
+        "# Train the model\n",
+        "history = model.fit(train_data, train_labels,\n",
+        "                    epochs=10,\n",
+        "                    batch_size=batch_size,\n",
+        "                    validation_split=0.2)\n",
+        "\n",
+        "# Evaluate the model on the test data\n",
+        "score, acc = model.evaluate(test_data, test_labels, batch_size=batch_size)\n",
+        "print('Test score:', score)\n",
+        "print('Test accuracy:', acc)\n",
+        "\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "EuBlIDCme2BJ",
+        "outputId": "d01183fe-577f-45ef-f45c-a62623f03bf2"
+      },
+      "execution_count": 27,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Loading data...\n",
+            "25000 train sequences\n",
+            "25000 test sequences\n",
+            "Found 88582 unique tokens.\n",
+            "Epoch 1/10\n",
+            "625/625 [==============================] - 64s 100ms/step - loss: 0.5465 - acc: 0.7226 - val_loss: 0.4213 - val_acc: 0.8328\n",
+            "Epoch 2/10\n",
+            "625/625 [==============================] - 63s 101ms/step - loss: 0.3546 - acc: 0.8526 - val_loss: 0.3878 - val_acc: 0.8408\n",
+            "Epoch 3/10\n",
+            "625/625 [==============================] - 63s 101ms/step - loss: 0.2826 - acc: 0.8895 - val_loss: 0.9517 - val_acc: 0.6532\n",
+            "Epoch 4/10\n",
+            "625/625 [==============================] - 66s 105ms/step - loss: 0.2335 - acc: 0.9090 - val_loss: 0.7774 - val_acc: 0.6970\n",
+            "Epoch 5/10\n",
+            "625/625 [==============================] - 62s 99ms/step - loss: 0.1777 - acc: 0.9329 - val_loss: 0.4923 - val_acc: 0.8040\n",
+            "Epoch 6/10\n",
+            "625/625 [==============================] - 62s 100ms/step - loss: 0.1410 - acc: 0.9477 - val_loss: 1.0741 - val_acc: 0.5858\n",
+            "Epoch 7/10\n",
+            "625/625 [==============================] - 61s 98ms/step - loss: 0.0972 - acc: 0.9650 - val_loss: 0.7897 - val_acc: 0.7844\n",
+            "Epoch 8/10\n",
+            "625/625 [==============================] - 61s 97ms/step - loss: 0.0658 - acc: 0.9756 - val_loss: 0.8363 - val_acc: 0.7794\n",
+            "Epoch 9/10\n",
+            "625/625 [==============================] - 63s 101ms/step - loss: 0.0487 - acc: 0.9830 - val_loss: 0.9350 - val_acc: 0.7626\n",
+            "Epoch 10/10\n",
+            "625/625 [==============================] - 61s 98ms/step - loss: 0.0398 - acc: 0.9882 - val_loss: 0.7842 - val_acc: 0.7824\n",
+            "782/782 [==============================] - 18s 23ms/step - loss: 0.8585 - acc: 0.7636\n",
+            "Test score: 0.8584912419319153\n",
+            "Test accuracy: 0.7635999917984009\n"
+          ]
+        }
+      ]
+    }
+  ]
+}
