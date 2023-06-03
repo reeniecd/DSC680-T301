@@ -1,6 +1,6 @@
 # NLP_President_Farewell_Speech
 
-This project focuses on analyzing the farewell speeches delivered by the Presidents of the United States. It utilizes Natural Language Processing (NLP) techniques to extract insights from the speeches archived by UC Santa Barbara.
+This project focuses on analyzing the farewell speeches delivered by the Presidents of the United States. It utilizes Natural Language Processing (NLP) techniques to extract insights from the speeches archived by UC Santa Barbara https://www.presidency.ucsb.edu/documents/app-categories/spoken-addresses-and-remarks/presidential/farewell-address
 
 ## Project Objective
 
